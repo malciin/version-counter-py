@@ -1,99 +1,86 @@
 **`version-counter-py`**
 
 - [About](#about)
-  * [CLI mode](#cli-mode)
-  * [API mode](#api-mode)
+- [Requirements](#requirements)
 - [Usage](#usage)
-  * [CLI](#cli)
-  * [API](#api)
-  * [Adding to jenkins](#adding-to-jenkins)
-    + [Example of usage](#example-of-usage)
-  * [Change `.versions` directory:](#versions-dir-change)
+- [Examples](#examples)
+  * [CLI mode](#cli-mode)
+  * [WebAPI mode](#webapi-mode)
+  * [Jenkins](#jenkins)
+    + [Installation](#installation)
+    + [Pipeline example: patch version generation](#pipeline-example-patch-version-gen)
 
 # About
+<img width="150px" src="https://upload.wikimedia.org/wikipedia/commons/8/82/Semver.jpg" />
 
-Simple 3KB python script that maintains correct patch number useful for jenkins builds.
+Simple 3KB python script that maintains correct version number which can be useful for jenkins builds.
 
-It remembers last patch number for given prefix - which could be anything but for jenkins purposes it could be something like `$JOB_NAME + $VERSION_PREFIX`.
+Script remembers current version for given **prefix**. **Prefix** could be anything but for jenkins purposes it could be something like 
 
-It can be called by simply running script from cli or by running `listen` mode which starts api service that can be called with curl.
+- `PREFIX = $JOB_NAME + $MAJOR_VERSION` - to get minor version for job
+- `PREFIX = $JOB_NAME + $MAJOR_MINOR_VERSION` - to get patch version for job
+- etc.
 
-<img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Semver.jpg" />
+It can be called directly by running script from shell or remotely with curl by running it as WebApi service.
+
+# Requirements
+
+Linux`*` with Python 3.9+`**`
+
+`*` - should work also on windows without problems but I've not tested that.
+
+`**` - may work on older Python 3 versions but I've not tested that.
+
+# Usage
+
+`./version-counter get "Program 1.0"` - gets version for prefix `Program 1.0`
+
+`./version-counter bump "Program 1.0"` - bumps version for prefix `Program 1.0` 
+
+`./version-counter show` - shows all currently maintained versions
+
+`./version-counter listen :8080` - starts WebAPI which can be used with curl like:
+
+```bash
+curl -sd "Program 1.0" localhost:8080 # returns same result as `get "Program 1.0"`
+curl -X PATCH -d "Program 1.0" localhost:8080 # returns same result as `bump "Program 1.0"`
+```
+
+`./version-counter -h` - shows basic help
+
+`./version-counter listen -h` - shows basic help for listen mode
+
+Default `.versions` directory location could be set by providing `--versions-dir`. 
+
+# Examples
 
 ## CLI mode
 
 <img src="./examples/output_cli.png" />
 
-## API mode
+## WebAPI mode
 
 <img src="./examples/output_listen.png" />
 
-# Usage
 
-Tested on linux.
+## Jenkins
 
-Download latest `version-counter` and make it executable by `chmod u+x version-counter`
+### Installation
 
-Now for checking all available arguments run:
-
-- `./version-counter -h` to get general help
-
-- `./version-counter cli -h` to get help about cli mode
-
-- `./version-counter listen -h` to get help about api mode
-
-## CLI
-
-Getting version number
-
-```
-./version-counter cli "folder/job-name 1.0"
-```
-
-Bumping version number
-
-```
-./version-counter cli -u "folder/job-name 1.0"
-```
-
-## API
-
-Starting server:
-
-```
-./version-counter listen :8080
-```
-
-Getting version number:
-
-```
-curl -sd "folder/job-name 1.0" localhost:8080
-```
-
-Bumping version number:
-
-```
-curl -X PATCH -d "folder/job-name 1.0" localhost:8080
-```
-
-## Adding to jenkins
-
-Simply copy `version-counter` to `JENKINS_HOME` and make it executable. Version details will be automatically stored in `.versions` folder.
-
-Ex:
+Simply copy `version-counter` to `JENKINS_HOME` and make it executable by running:
 
 ```
 cp version-counter jenkins_home/.
 cd jenkins_home && chmod o+x version-counter
 ```
 
-<a href="./examples/jenkinsfile">Example jenkins job</a>
+Then `version-counter` could be called as `sh '~/version-counter get "$PREFIX"'` pipeline step. Version data will be automatically stored in `JENKINS_HOME/.versions` folder.
 
-### Example of usage
+### Pipeline example: patch version generation<a id="pipeline-example-patch-version-gen"></a>
 
 Full jenkins file used in following example is available <a href="examples/jenkinsfile">here</a>.
 
-| Job number | Version prefix | Program output | Version combined
+| Job number | Major minor version | Program output (_used as patch version_) | Version combined
 |---|---|---|---|
 | #1 (Success) | 1.0 | `0` | 1.0.`0`
 | #2 (Success) | 1.0 | `1` | 1.0.`1`
@@ -106,16 +93,12 @@ Full jenkins file used in following example is available <a href="examples/jenki
 | #9 (Success) | 1.0 | `4` | 1.0.`4`
 | #10 (Success) | 0.1 | `0` | 0.1.`0`
 
-In upper example version is bumped only in success builds - *version counter with `-u` flag* is called only in `post { success { ... } }` block. It could be changed by putting *version counter wth `-u` flag* in different post segment.
+In linked <a href="examples/jenkinsfile">jenkinsfile</a> patch version is bumped only for success builds - `version-counter bump` is called in `post { success { ... } }` block. That could be modifed by putting `version-counter bump` in different post block.
 
-Legend:
+**Explanation:**
 
-`Version prefix` - manually set from environment variable or user input. In jenkinsfile its named `VERSION_PREFIX`
+*Major minor version* - manually set from environment variable or user input. In jenkinsfile its named `MAJOR_MINOR_VERSION`
 
-*Version combined* - combines version prefix with output from `version-counter`. In jenkins file its the line with `env.VERSION = env.VERSION_PREFIX + '.' + env.VERSION_COUNTER`
+*Program output* - result of `version-counter get "JOB_NAME MAJOR_MINOR_VERSION"`
 
-## Change `.versions` directory:<a id="versions-dir-change"></a>
-
-Specify `--versions-dir X` argument like:
-
-`./version-counter --versions-dir .data cli "job_with_number_readed_from_.data_dir"`
+*Version combined* - combines version prefix with output from `version-counter`. In jenkins file its the line with `env.VERSION = env.MAJOR_MINOR_VERSION + '.' + env.PATCH_VERSION`

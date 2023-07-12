@@ -4,22 +4,22 @@ pipeline {
 
   environment {
     // or provide that prefix from input
-    VERSION_PREFIX = '0.1'
+    MAJOR_MINOR_VERSION = '0.1'
   }
 
   stages {
     stage('Step') {
       steps {
         script {
-          env.VERSION_COUNTER = sh(
-            script: '~/version-counter cli "$JOB_NAME $VERSION_PREFIX"',
+          env.PATCH_VERSION = sh(
+            script: '~/version-counter get "$JOB_NAME $MAJOR_MINOR_VERSION"',
             returnStdout: true).trim()
-          env.VERSION = env.VERSION_PREFIX + '.' + env.VERSION_COUNTER
+          env.VERSION = env.MAJOR_MINOR_VERSION + '.' + env.PATCH_VERSION
         }
 
         echo "Building version: $VERSION"
-        // Install https://plugins.jenkins.io/build-name-setter to get
-        // 0.1.0, 0.1.1, ... names rather than #1, #2, ...
+        // To get 0.1.0, 0.1.1, ... names rather than #1, #2, ...
+        // install https://plugins.jenkins.io/build-name-setter and uncomment below 2 lines
         // buildName "$VERSION"
         // buildDescription "Version: $VERSION"
       }
@@ -28,7 +28,7 @@ pipeline {
 
   post {
     success {
-      sh '~/version-counter cli -u "$JOB_NAME $VERSION_PREFIX"'
+      sh '~/version-counter bump "$JOB_NAME $MAJOR_MINOR_VERSION"'
     }
   }
 }

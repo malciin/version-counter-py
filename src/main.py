@@ -6,7 +6,7 @@ from version_maintainer import VersionMaintainer
 
 def run():
     parser = argparse.ArgumentParser(
-        description='Python service/cli tool for computing next version value')
+        description='Python service/cli tool for computing next version value. Source code: https://github.com/malciin/version-counter-py')
     
     parser.add_argument(
         '--versions-dir',
@@ -19,9 +19,13 @@ def run():
         help='mode',
         required=True)
     
-    cli_parser = subparsers.add_parser('cli')
-    cli_parser.add_argument('-u', '--update', action='store_true')
+    cli_parser = subparsers.add_parser('get')
     cli_parser.add_argument('job')
+
+    cli_parser = subparsers.add_parser('bump')
+    cli_parser.add_argument('job')
+
+    cli_parser = subparsers.add_parser('show')
     
     listen_parser = subparsers.add_parser('listen')
     listen_parser.add_argument(
@@ -31,7 +35,7 @@ def run():
 
     args = parser.parse_args() 
 
-    version_maintainer = VersionMaintainer(args.versions_dir, silent_mode = args.mode == 'cli')
+    version_maintainer = VersionMaintainer(args.versions_dir, silent_mode = args.mode != 'listen')
 
     if args.mode == 'listen':
         ip, port = args.address.split(':')
@@ -48,12 +52,13 @@ def run():
             except KeyboardInterrupt:
                 print('Closing... ', end='')
         print('Gracefully closed')
+    elif args.mode == 'bump':
+        next_version = version_maintainer.bump_version_number(args.job)
+        print(f'Next version for {utils.accent_text(args.job)} will be {utils.accent_text(str(next_version))}')
+    elif args.mode == 'get':
+        print(version_maintainer.get_version_number(args.job))
     else:
-        if args.update:
-            next_version = version_maintainer.bump_version_number(args.job)
-            print(f'Next version for {utils.accent_text(args.job)} will be {utils.accent_text(str(next_version))}')
-        else:
-            print(version_maintainer.get_version_number(args.job))
+        version_maintainer.print_current_versions_values()
 
 if __name__ == '__main__':
     run()

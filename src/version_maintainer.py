@@ -18,7 +18,7 @@ class VersionMaintainer:
 
         if not silent_mode:
             print(startup_log)
-            self.__print_current_versions_values()
+            self.print_current_versions_values()
         
     def get_version_number(self, prefix: str) -> int:
         version_path = self.__get_path(prefix)
@@ -41,6 +41,21 @@ class VersionMaintainer:
             fprint(f'{v}')
 
         return v
+    
+    def print_current_versions_values(self) -> str:
+        any_printed = False
+
+        print('Current versions:')
+        for z in Path(self.__versions_dir).rglob('*/*'):
+            if not any_printed:
+                any_printed = True
+            splitted = utils.read_utf8(z).splitlines()
+            version = self.__get_version_number(splitted)
+            print(f'    {splitted[0][2:]}.{utils.accent_text(str(version))}')
+        
+        if not any_printed: print('    <None>')
+
+        print(f'All new jobs will start from {utils.accent_text(0)} version.')
 
     def __get_key(self, prefix: str) -> str:
         return hashlib.md5(prefix.encode()).hexdigest()
@@ -48,19 +63,6 @@ class VersionMaintainer:
     def __get_path(self, prefix: str) -> str:
         key = self.__get_key(prefix)
         return os.path.join(self.__versions_dir, key[0], key[1:])
-
-    def __print_current_versions_values(self) -> str:
-        header_printed = False
-
-        for z in Path(self.__versions_dir).rglob('*/*'):
-            if not header_printed:
-                header_printed = True
-                print('Current versions:')
-            splitted = utils.read_utf8(z).splitlines()
-            version = self.__get_version_number(splitted)
-            print(f'    {splitted[0][2:]}.{utils.accent_text(str(version))}')
-        
-        print(f'All new jobs will start from {utils.accent_text(0)} version.')
 
     def __get_version_number(self, lines: list[str]) -> int:
         return int(next(l for l in lines if not l.startswith('#')))
