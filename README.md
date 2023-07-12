@@ -14,7 +14,7 @@
 
 Simple 3KB python script that maintains correct patch number useful for jenkins builds.
 
-It remembers last patch number for given prefix (which could be anything but for jenkins purposes it could be something like `$JOB_NAME + $VERSION_PREFIX`).
+It remembers last patch number for given prefix - which could be anything but for jenkins purposes it could be something like `$JOB_NAME + $VERSION_PREFIX`.
 
 It can be called by simply running script from cli or by running `listen` mode which starts api service that can be called with curl.
 
@@ -30,13 +30,17 @@ It can be called by simply running script from cli or by running `listen` mode w
 
 # Usage
 
-For most recent help use:
+Tested on linux.
 
-Run `./version-counter -h` to get general help
+Download latest `version-counter` and make it executable by `chmod u+x version-counter`
 
-Run `./version-counter cli -h` to get help about cli mode
+Now for checking all available arguments run:
 
-Run `./version-counter listen -h` to get help about api mode
+- `./version-counter -h` to get general help
+
+- `./version-counter cli -h` to get help about cli mode
+
+- `./version-counter listen -h` to get help about api mode
 
 ## CLI
 
