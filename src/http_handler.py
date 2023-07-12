@@ -16,13 +16,13 @@ class HttpHandler(BaseHTTPRequestHandler):
         prefix = self.__read_body()
         version = self.__version_maintainer.get_version_number(prefix)
 
-        self.__send_text(str(version))
+        self.__send_text(str(version) + '\r\n')
 
     def do_PATCH(self):
         prefix = self.__read_body()
         version = self.__version_maintainer.bump_version_number(prefix)
 
-        self.__send_text(str(version) + '\r\n')
+        self.__send_text(f"Next version for '{prefix}' will be '{version}'" + '\r\n')
 
     def __read_body(self) -> str:
         body_length = self.headers.get('Content-Length')
